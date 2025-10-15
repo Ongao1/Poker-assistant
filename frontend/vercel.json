@@ -2,8 +2,6 @@
   "version": 2,
   "outputDirectory": ".",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://你的-backend.onrender.com/$1" }
-  ],
-  "redirects": [],
-  "headers": []
+    { "source": "/api/(.*)", "destination": "https://poker-assistant.onrender.com/$1" }
+  ]
 }
