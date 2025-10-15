@@ -2,6 +2,7 @@
   "version": 2,
   "outputDirectory": ".",
   "rewrites": [
+    { "source": "/api", "destination": "https://poker-assistant.onrender.com/" },
     { "source": "/api/(.*)", "destination": "https://poker-assistant.onrender.com/$1" }
   ]
 }
