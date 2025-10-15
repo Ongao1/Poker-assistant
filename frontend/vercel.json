@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://你的-backend.onrender.com/$1" }
+  ],
+  "redirects": [],
+  "headers": []
+}
