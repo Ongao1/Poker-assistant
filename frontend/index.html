@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ongao's Poker Lab 🚀</title>
+
+<!-- 现代感字体 -->
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&display=swap" rel="stylesheet">
+
+<!-- 主题样式（纯静态：不再用 url_for） -->
+<link rel="stylesheet" href="./style.css">
+
+<style>
+  /* 轻量样式增强：适配你现有的 style.css，不会冲突 */
+  :root{--grad1:#60a5fa;--grad2:#a78bfa}
+  body{font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  .container { max-width: 960px; margin: 0 auto; padding: 28px 16px; }
+  h1 { margin: 0 0 6px 0; }
+  .sub { color: #6b7280; margin: 0 0 16px 0; }
+  .card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px; margin: 12px 0; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .row > * { flex: 1 1 180px; }
+  .input-mini { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 14px; }
+  .btn { padding: 10px 14px; border: 1px solid #d1d5db; background: #111827; color: #fff; border-radius: 10px; cursor: pointer; font-weight: 600; }
+  .btn.secondary { background: #fff; color: #111827; }
+  .btn:disabled { opacity: .6; cursor: not-allowed; }
+  .help { font-size: 12px; color: #6b7280; }
+  .output { white-space: pre-wrap; background: #0b1020; color: #e5e7eb; padding: 12px; border-radius: 10px; min-height: 48px; }
+  .bar-wrap { background: #f3f4f6; border-radius: 12px; overflow: hidden; height: 14px; }
+  .bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--grad1), var(--grad2)); transition: width .4s ease; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stack { display: grid; gap: 8px; }
+  .muted { color: #6b7280; }
+  .danger { color: #b91c1c; }
+  .ok { color: #065f46; }
+  .loading { animation: pulse 1.1s infinite ease-in-out; }
+  @keyframes pulse { 0%{opacity:.55} 50%{opacity:1} 100%{opacity:.55} }
+  .inline { display: inline-flex; gap: 8px; align-items: center; }
+  .pill { font-size: 12px; padding: 4px 8px; border: 1px solid #e5e7eb; border-radius: 999px; }
+  .kvs { display: grid; grid-template-columns: 160px 1fr; gap: 8px; }
+  code.inline { background: #f3f4f6; padding:2px 6px; border-radius:6px;}
+
+  /* 输入即时校验可视化 */
+  .is-invalid { border-color:#dc3545 !important; box-shadow:0 0 0 .2rem rgba(220,53,69,.12) !important; }
+  .help-row { display:flex; gap:10px; align-items:baseline; flex-wrap: wrap; margin-top:4px; }
+  .help-preview { color:#6b7280; font-size:12px; }
+  .help-error { color:#b91c1c; font-size:12px; }
+  #dup-alert { display:none }
+
+  /* —— 新增：SSE 实时进度面板 —— */
+  .progress-card{border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin:12px 0;display:none}
+  .progress-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .progress-sub{color:#6b7280}
+  .bar-wrap.x{height:14px}
+  .bar.x{height:100%;width:0%;background:linear-gradient(90deg,var(--grad1),var(--grad2));transition:width .15s ease}
+</style>
+</head>
+
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <div class="brand">Ongao's Poker Lab</div>
+      <button id="themeBtn" class="theme-toggle" type="button">☾/☀︎</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>Ongao's Poker Lab 🚀</h1>
+    <p class="sub">输入手牌与公共牌，一键获取胜率，并基于 Pot Odds 给出下注建议；若后端提供 LLM 文案，则显示更详细的策略。</p>
+
+    <!-- 输入区 -->
+    <section class="card">
+      <h2>输入牌面</h2>
+      <div class="row">
+        <div class="stack">
+          <label>手牌（2 张，格式如 <code class="inline">Ah</code>、<code class="inline">Kd</code>）</label>
+          <div class="pair">
+            <input id="hole1" class="input-mini" maxlength="2" placeholder="如 Ah">
+            <input id="hole2" class="input-mini" maxlength="2" placeholder="如 Kd">
+          </div>
+          <!-- 手牌预览/错误 -->
+          <div class="help-row">
+            <div id="hero_preview" class="help-preview"></div>
+            <div id="hero_error" class="help-error"></div>
+          </div>
+        </div>
+
+        <div class="stack" style="flex: 2 1 360px;">
+          <label>公共牌（0–5 张，任意阶段输入即可）</label>
+          <div class="row">
+            <input id="b1" class="input-mini" maxlength="2" placeholder="翻牌1">
+            <input id="b2" class="input-mini" maxlength="2" placeholder="翻牌2">
+            <input id="b3" class="input-mini" maxlength="2" placeholder="翻牌3">
+            <input id="b4" class="input-mini" maxlength="2" placeholder="转牌">
+            <input id="b5" class="input-mini" maxlength="2" placeholder="河牌">
+          </div>
+          <!-- 公共牌预览/错误 -->
+          <div class="help-row">
+            <div id="board_preview" class="help-preview"></div>
+            <div id="board_error" class="help-error"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="stack">
+          <label>彩池大小（可选，单位同下注）</label>
+          <input id="pot" class="input-mini" type="number" min="0" step="0.01" placeholder="如 10">
+        </div>
+        <div class="stack">
+          <label>你需要跟注的金额（可选）</label>
+          <input id="call" class="input-mini" type="number" min="0" step="0.01" placeholder="如 3">
+        </div>
+        <div class="stack">
+          <label>&nbsp;</label>
+          <div class="inline">
+            <button id="btn-run" class="btn" type="button">计算胜率</button>
+            <button id="btn-reset" class="btn secondary" type="button">重置</button>
+            <button id="btn-sample" class="btn secondary" type="button">示例填充</button>
+          </div>
+        </div>
+      </div>
+      <div id="dup-alert" class="alert alert-danger mt-2"></div>
+      <p class="help">牌面格式：<code class="inline">2-9,T,J,Q,K,A</code> + <code class="inline">s/h/d/c</code>（♠/♥/♦/♣）。例如：<code class="inline">As</code>、<code class="inline">Th</code>、<code class="inline">7d</code>、<code class="inline">9c</code>。</p>
+    </section>
+
+    <!-- —— 新增：实时进度（SSE） —— -->
+    <section id="progressPanel" class="progress-card">
+      <div class="progress-title">
+        <div><b id="stageText">准备中…</b></div>
+        <div class="progress-sub"><span id="etaText"></span></div>
+      </div>
+      <div class="bar-wrap x">
+        <div id="bar" class="bar x"></div>
+      </div>
+      <div class="progress-sub" style="margin-top:6px;">
+        <span id="pctText">0%</span>
+        <span id="streetText" class="ms-3"></span>
+      </div>
+    </section>
+
+    <!-- 结果区：胜率 + 条形图 -->
+    <section class="card">
+      <h2>胜率（Equity）</h2>
+      <div class="kvs">
+        <div class="muted">我方获胜概率</div>
+        <div><strong id="equity-text">—</strong></div>
+      </div>
+      <div class="bar-wrap" style="margin:10px 0;">
+        <div id="equity-bar" class="bar"></div>
+      </div>
+      <div class="kvs">
+        <div class="muted">平局概率</div><div id="tie-text">—</div>
+        <div class="muted">失败概率</div><div id="lose-text">—</div>
+      </div>
+    </section>
+
+    <!-- 策略建议（LLM 或兜底规则） -->
+    <section class="card">
+      <h2>策略建议</h2>
+      <div class="kvs" style="margin-bottom:8px;">
+        <div class="muted">Pot Odds（自动算）</div>
+        <div id="odds-text">—</div>
+      </div>
+      <div id="advice" class="output">// 这里将显示来自后端的 LLM 建议；如无，则根据 equity 与 pot odds 给出兜底建议。</div>
+      <div class="help" style="margin-top:8px">
+        兜底规则：当 <code class="inline">equity ≥ pot_odds</code> 值得跟注；优势较大且对手弃牌率可观时可加注（建议下注量：彩池的 40%–70%）。
+      </div>
+    </section>
+
+    <footer class="muted" style="margin-top:16px;">
+      <small>后端 API 通过 <code>window.API_BASE</code> 指定；计算流程：<code>POST /start</code> → <code>EventSource /stream/&lt;task_id&gt;</code>。</small>
+    </footer>
+  </main>
+
+  <!-- 配置后端域名（必须在 app.js 前加载） -->
+  <script src="./config.js"></script>
+
+  <!-- 你的主逻辑（会使用 window.API_BASE 去请求 /start 与 /stream） -->
+  <script src="./app.js" defer></script>
+
+  <!-- 主题切换（放在按钮之后挂载） -->
+  <script>
+    (function(){
+      const html = document.documentElement;
+      const btn = document.getElementById('themeBtn');
+      const set = m => { html.classList.toggle('light', m==='light'); localStorage.setItem('theme', m); }
+      const current = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      set(current);
+      btn && (btn.onclick = () => set(html.classList.contains('light') ? 'dark' : 'light'));
+    })();
+  </script>
+
+  <!-- 前端实时校验与规范化（原有脚本保留） -->
+  <script>
+  // —— 多语言牌面规范化（适配两字符输入：如 Ah、A♠、th、7D 等） ——
+  const SUIT_MAP = new Map([
+    ['s','s'],['♠','s'],['黑桃','s'],['黑','s'],
+    ['h','h'],['♥','h'],['红桃','h'],['红','h'],
+    ['d','d'],['♦','d'],['方片','d'],['方块','d'],['方','d'],
+    ['c','c'],['♣','c'],['梅花','c'],['梅','c']
+  ]);
+  const RANK_MAP = new Map([
+    ['A','A'],['a','A'],['K','K'],['k','K'],['Q','Q'],['q','Q'],['J','J'],['j','J'],
+    ['T','T'],['t','T'],['10','T'],
+    ['9','9'],['8','8'],['7','7'],['6','6'],['5','5'],['4','4'],['3','3'],['2','2']
+  ]);
+
+  const ids = ['hole1','hole2','b1','b2','b3','b4','b5'];
+  const els = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+
+  const normSuitSymbols = s => s.replace(/♠/g,'s').replace(/♥/g,'h').replace(/♦/g,'d').replace(/♣/g,'c').replace(/\s+/g,'');
+
+  function normOne(tok){
+    if(!tok) throw new Error("空牌面");
+    let t = normSuitSymbols(tok.trim());
+    let m = t.match(/^(A|K|Q|J|T|[2-9])(s|h|d|c)$/i);
+    if(m){
+      const r = (RANK_MAP.get(m[1]) || m[1].toUpperCase());
+      const s = (m[2]||'').toLowerCase();
+      if(r && 'shdc'.includes(s)) return r + s;
+    }
+    let m2 = t.match(/^(A|K|Q|J|T|[2-9])(黑|红|方|梅)$/i);
+    if(m2){
+      const r = (RANK_MAP.get(m2[1]) || m2[1].toUpperCase());
+      const s = new Map([['黑','s'],['红','h'],['方','d'],['梅','c']]).get(m2[2]);
+      if(r && s) return r + s;
+    }
+    let m3 = tok.trim().match(/^(A|K|Q|J|T|[2-9])\s*(♠|♥|♦|♣)$/i);
+    if(m3){
+      const r = (RANK_MAP.get(m3[1]) || m3[1].toUpperCase());
+      const s = new Map([['♠','s'],['♥','h'],['♦','d'],['♣','c']]).get(m3[2]);
+      if(r && s) return r + s;
+    }
+    throw new Error(`无法识别：${tok}`);
+  }
+
+  function readAll(){
+    ids.forEach(id => els[id] && els[id].classList.remove('is-invalid'));
+    document.getElementById('hero_error').textContent = '';
+    document.getElementById('board_error').textContent = '';
+    document.getElementById('dup-alert').style.display = 'none';
+    document.getElementById('dup-alert').textContent = '';
+
+    const get = id => (els[id]?.value || '').trim();
+    const errors = [];
+    const heroRaw = [get('hole1'), get('hole2')].filter(Boolean);
+    const boardRaw = [get('b1'),get('b2'),get('b3'),get('b4'),get('b5')].filter(Boolean);
+
+    if(heroRaw.length !== 2){
+      errors.push(`手牌需 2 张，当前 ${heroRaw.length} 张`);
+      els.hole1.classList.add('is-invalid');
+      els.hole2.classList.add('is-invalid');
+    }
+
+    const heroArr = [];
+    const boardArr = [];
+    for(const [i, v] of heroRaw.entries()){
+      try { heroArr.push(normOne(v)); }
+      catch(e){ errors.push(`手牌${i+1}：${e.message}`); (i===0?els.hole1:els.hole2).classList.add('is-invalid'); }
+    }
+    const bid = ['b1','b2','b3','b4','b5'];
+    boardRaw.forEach((v, i) => {
+      try { boardArr.push(normOne(v)); }
+      catch(e){ errors.push(`公共牌${i+1}：${e.message}`); els[bid[i]].classList.add('is-invalid'); }
+    });
+
+    if(new Set(heroArr).size !== heroArr.length){
+      errors.push('手牌存在重复');
+      els.hole1.classList.add('is-invalid');
+      els.hole2.classList.add('is-invalid');
+    }
+    if(new Set(boardArr).size !== boardArr.length){
+      errors.push('公共牌存在重复');
+      bid.forEach((id, i)=> boardRaw[i] && els[id].classList.add('is-invalid'));
+    }
+
+    const all = [...heroArr, ...boardArr];
+    const seen = new Map(), dup = new Set();
+    all.forEach(c => { if(seen.has(c)) dup.add(c); else seen.set(c, true); });
+    if(dup.size){
+      const dupMsg = `跨字段重复：${[...dup].join(' ')}`;
+      const dupBox = document.getElementById('dup-alert');
+      dupBox.style.display = 'block';
+      dupBox.textContent = dupMsg;
+
+      const markIfDup = (el, val) => { try { if(val && dup.has(normOne(val))) el.classList.add('is-invalid'); } catch(_){} };
+      markIfDup(els.hole1, get('hole1'));
+      markIfDup(els.hole2, get('hole2'));
+      bid.forEach(id => markIfDup(els[id], get(id)));
+    }
+
+    document.getElementById('hero_preview').textContent  = heroArr.length ? `规范化：${heroArr.join(' ')}` : '';
+    document.getElementById('board_preview').textContent = boardArr.length ? `规范化：${boardArr.join(' ')}` : '';
+    const heroErrs  = errors.filter(x => x.startsWith('手牌') || x.includes('手牌存在重复') || x.includes('需 2 张'));
+    const boardErrs = errors.filter(x => x.startsWith('公共牌') || x.includes('公共牌存在重复'));
+    document.getElementById('hero_error').textContent  = heroErrs.join('；');
+    document.getElementById('board_error').textContent = boardErrs.join('；');
+
+    return { heroArr, boardArr, errors, duplicates: dup };
+  }
+
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('input', readAll);
+    el.addEventListener('blur', readAll);
+  });
+  readAll();
+
+  const btnRun = document.getElementById('btn-run');
+  if(btnRun){
+    btnRun.addEventListener('click', (e)=>{
+      const { errors, duplicates, heroArr, boardArr } = readAll();
+      if(errors.length || duplicates.size){
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      // 回填规范化值，保证后端收到标准格式
+      const setVal = (id, v) => { const el=document.getElementById(id); if(el) el.value = v || ''; };
+      setVal('hole1', heroArr[0] || '');
+      setVal('hole2', heroArr[1] || '');
+      const b = ['b1','b2','b3','b4','b5'];
+      boardArr.forEach((v,i)=> setVal(b[i], v));
+      // 真正的请求与 SSE 订阅在 app.js 中执行
+      window.__RUN_SIM__ && window.__RUN_SIM__();
+    }, true);
+  }
+
+  const btnSample = document.getElementById('btn-sample');
+  const btnReset  = document.getElementById('btn-reset');
+  if(btnSample){ btnSample.addEventListener('click', ()=> setTimeout(readAll, 0)); }
+  if(btnReset){  btnReset.addEventListener('click',  ()=> {
+    ['hole1','hole2','b1','b2','b3','b4','b5','pot','call'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value='' })
+    setTimeout(readAll, 0);
+  }); }
+  </script>
+</body>
+</html>

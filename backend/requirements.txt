@@ -1,0 +1,9 @@
+flask
+treys
+gunicorn
+gevent           # 建议用 gevent worker，SSE 更稳
+flask-cors
+openai           # 如果你用到 LLM；否则可删
+flask>=3.0.0
+# 若要线上部署（Render/Railway/Fly等），建议加上：
+gunicorn>=21.2.0

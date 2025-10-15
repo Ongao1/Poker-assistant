@@ -1,0 +1,131 @@
+:root{
+  --bg1:#0f172a; --bg2:#111827; --txt:#e5e7eb; --muted:#94a3b8;
+  --acc1:#60a5fa; --acc2:#a78bfa; --glass:rgba(255,255,255,0.06); --border:rgba(255,255,255,0.12);
+  --danger:#dc3545; --danger-bg:rgba(220,53,69,.1);
+  --ok:#10b981; --ok-bg:rgba(16,185,129,.1);
+}
+
+/* ===== 全局基础 ===== */
+html,body{height:100%}*{box-sizing:border-box}
+body.theme-cyber{
+  margin:0; font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--txt);
+  background:
+    radial-gradient(1200px 600px at 10% 10%, #1f2937 0%, transparent 60%),
+    radial-gradient(900px 500px at 90% 20%, #0ea5e9 0%, transparent 55%),
+    linear-gradient(120deg, var(--bg1), var(--bg2));
+  min-height:100%; overflow-x:hidden;
+}
+a{color:inherit; text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--acc1); outline-offset:2px}
+
+/* ===== 顶部导航（可选） ===== */
+.nav{
+  position:sticky; top:0; z-index:10; backdrop-filter:blur(8px);
+  background:linear-gradient(180deg,rgba(15,23,42,.7),rgba(15,23,42,0)); border-bottom:1px solid var(--border)
+}
+.nav-inner{max-width:1000px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:800;letter-spacing:.2px}
+.theme-toggle{
+  border:1px solid var(--border); background:rgba(255,255,255,.06); color:var(--txt);
+  padding:6px 10px; border-radius:10px; cursor:pointer; font-weight:700; transition:.2s ease
+}
+.theme-toggle:hover{border-color:rgba(255,255,255,.25); transform:translateY(-1px)}
+
+/* ===== 容器与卡片 ===== */
+.container{max-width:1000px;margin:0 auto;padding:28px 16px}
+.card{
+  backdrop-filter:blur(10px); background:var(--glass); border:1px solid var(--border);
+  border-radius:18px; padding:16px; margin:12px 0;
+  box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
+  animation:fade .45s ease both; color:var(--txt)
+}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.row>*{flex:1 1 180px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stack{display:grid;gap:8px}
+
+/* ===== 标题视觉增强 ===== */
+h1{
+  margin:0 0 6px;
+  font-size:clamp(26px,3.2vw,42px);
+  font-weight:800; line-height:1.1; letter-spacing:-.02em;
+  background:linear-gradient(90deg,var(--acc1),var(--acc2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:0 0 30px rgba(99,102,241,.25);
+}
+h2{margin:0 0 10px}
+.sub{color:#cbd5e1;margin:0 0 16px}
+
+/* ===== 输入与按钮 ===== */
+.input-mini,
+input[type="text"], input[type="number"]{
+  padding:10px 12px; border:1px solid #334155; border-radius:10px;
+  background:rgba(255,255,255,.04); color:var(--txt); outline:none; transition:.15s ease
+}
+input::placeholder{color:#94a3b8}
+.input-mini:focus,
+input[type="text"]:focus, input[type="number"]:focus{
+  border-color:#64748b; box-shadow:0 0 0 3px rgba(99,102,241,.25)
+}
+
+.btn, button{
+  padding:10px 14px; border:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  color:var(--txt); border-radius:12px; cursor:pointer; font-weight:600;
+  transition:transform .15s, box-shadow .2s, border-color .2s, background .2s;
+}
+.btn.secondary{background:#0f172a;color:#e5e7eb}
+.btn:hover, button:hover{
+  transform:translateY(-1px);
+  border-color:rgba(255,255,255,.3);
+  box-shadow:0 8px 24px rgba(96,165,250,.25), 0 0 0 1px rgba(255,255,255,.08) inset;
+}
+.btn:disabled{opacity:.6; cursor:not-allowed}
+
+/* ===== 输出区域 & 进度条 ===== */
+.output{
+  white-space:pre-wrap; background:#0b1020; color:#e5e7eb; padding:12px;
+  border-radius:10px; min-height:48px; border:1px solid #1f2937
+}
+.bar-wrap{background:#0b1220;border:1px solid #1f2937;border-radius:12px;overflow:hidden;height:14px}
+.bar{height:100%;width:0%;background:linear-gradient(90deg,var(--acc1),var(--acc2));transition:width .4s}
+.muted{color:var(--muted)}
+.ok{color:var(--ok)} .danger{color:var(--danger)}
+
+/* ===== 表单校验/预览（前端拦截配套） ===== */
+.is-invalid{
+  border-color:var(--danger) !important;
+  box-shadow:0 0 0 .2rem var(--danger-bg) !important;
+}
+.help-row{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-top:4px}
+.help-preview{color:var(--muted);font-size:12px}
+.help-error{color:var(--danger);font-size:12px}
+
+/* 简易 alert（无需引入 Bootstrap） */
+.alert{
+  padding:10px 12px;border-radius:10px;border:1px solid var(--border); background:rgba(255,255,255,.04); color:var(--txt)
+}
+.alert-danger{border-color:var(--danger); background:var(--danger-bg); color:#fecaca}
+#dup-alert{display:none}
+
+/* ===== 明亮模式（与 html.light 配套） ===== */
+.light body.theme-cyber{
+  color:#0b1220; background:linear-gradient(120deg,#f9fafb,#eef2ff)
+}
+.light .card{ background:rgba(255,255,255,.9); border-color:rgba(0,0,0,.06); color:#0b1220 }
+.light .theme-toggle{ color:#0b1220; background:#fff; border-color:#e5e7eb }
+.light .input-mini,
+.light input[type="text"], .light input[type="number"]{
+  background:#fff; border-color:#d1d5db; color:#0b1220
+}
+.light .input-mini:focus,
+.light input[type="text"]:focus, .light input[type="number"]:focus{
+  border-color:#60a5fa; box-shadow:0 0 0 3px rgba(96,165,250,.25)
+}
+.light .output{
+  background:#0f172a; color:#e5e7eb; border-color:#111827
+}
+.light .alert{ background:#fff; color:#111827 }
+.light .alert-danger{ background:#fee2e2; border-color:#ef4444; color:#991b1b }
