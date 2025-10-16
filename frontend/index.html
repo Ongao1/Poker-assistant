@@ -5,11 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ongao's Poker Lab 🚀</title>
 
+<!-- 避免 /favicon.ico 404 -->
+<link rel="icon" href="data:,">
+
 <!-- 现代感字体 -->
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&display=swap" rel="stylesheet">
 
-<!-- 主题样式（纯静态：不再用 url_for） -->
+<!-- 主题样式（纯静态） -->
 <link rel="stylesheet" href="./style.css">
 
 <style>
@@ -125,7 +128,8 @@
           <div class="inline">
             <button id="btn-run" class="btn" type="button">计算胜率</button>
             <button id="btn-reset" class="btn secondary" type="button">重置</button>
-            <button id="btn-sample" className="btn secondary" type="button">示例填充</button>
+            <!-- 修复：原生 HTML 用 class 而不是 className -->
+            <button id="btn-sample" class="btn secondary" type="button">示例填充</button>
           </div>
         </div>
       </div>
@@ -223,9 +227,9 @@
     })();
   </script>
 
-  <!-- 4) 前端实时校验（你原有逻辑，未改动） -->
+  <!-- 4) 前端实时校验（你的原有逻辑可继续写在这里） -->
   <script>
-  /* 你的校验脚本（原样保留） —— 为节省篇幅，这里略。把你发来的那段原样放回这里即可 */
+  /* …（此处放你原有的校验脚本）… */
   </script>
 </body>
 </html>
